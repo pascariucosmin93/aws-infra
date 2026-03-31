@@ -1,0 +1,13 @@
+aws_region         = "eu-west-1"
+project            = "ecs-platform"
+environment        = "dev"
+service_name       = "app"
+container_port     = 3000
+health_check_path  = "/health"
+cpu                = 256
+memory             = 512
+desired_count      = 1
+min_capacity       = 1
+max_capacity       = 2
+log_retention_days = 30
+image_tag          = "latest"
