@@ -1,0 +1,89 @@
+name: Terraform CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path:
+          - envs/dev/vpc
+          - envs/dev/ecr
+          - envs/dev/alb
+          - envs/dev/waf
+          - envs/dev/iam
+          - envs/dev/secrets
+          - envs/dev/sns
+          - envs/dev/cognito
+          - envs/dev/ecs
+          - envs/stg/vpc
+          - envs/stg/ecr
+          - envs/stg/alb
+          - envs/stg/waf
+          - envs/stg/iam
+          - envs/stg/secrets
+          - envs/stg/sns
+          - envs/stg/cognito
+          - envs/stg/ecs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.path }}
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.path }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ matrix.path }}
+
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run TFLint
+        run: tflint --recursive
+
+  checkov:
+    name: Checkov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
+          output_format: cli
