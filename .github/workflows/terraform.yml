@@ -22,6 +22,8 @@ jobs:
           - envs/dev/sns
           - envs/dev/cognito
           - envs/dev/ecs
+          - envs/dev/rds
+          - envs/dev/redis
           - envs/stg/vpc
           - envs/stg/ecr
           - envs/stg/alb
@@ -31,6 +33,8 @@ jobs:
           - envs/stg/sns
           - envs/stg/cognito
           - envs/stg/ecs
+          - envs/stg/rds
+          - envs/stg/redis
 
     steps:
       - name: Checkout
