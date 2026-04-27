@@ -1,0 +1,12 @@
+aws_region              = "eu-west-1"
+project                 = "ecs-platform"
+environment             = "stg"
+db_name                 = "appdb"
+db_username             = "appadmin"
+engine                  = "postgres"
+engine_version          = "16.3"
+instance_class          = "db.t4g.large"
+allocated_storage       = 150
+max_allocated_storage   = 700
+backup_retention_period = 14
+monitoring_interval     = 60

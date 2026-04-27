@@ -1,164 +1,105 @@
 # aws-ecs-platform
 
-Production-style AWS ECS Fargate platform built with Terraform.
+AWS-native Terraform platform for running a web application on ECS Fargate with secure edge, multi-AZ networking, managed data services, and per-environment state isolation.
 
-A public reference implementation for running containerised workloads on AWS using a fully modular Terraform layout, per-module remote state, and a GitOps-friendly CI/CD pipeline.
+This repository is portfolio-focused, but structured to reflect production engineering standards.
 
-No live AWS account details, subscription IDs, or secrets are included.
+## Core Design
 
-## What This Repository Demonstrates
+- Compute: ECS Fargate behind ALB
+- Edge security: AWS WAFv2 attached to ALB
+- Network: public, private-app, private-data subnet tiers
+- Data: Amazon RDS (Multi-AZ) + ElastiCache Redis
+- Secrets: AWS Secrets Manager
+- Observability: CloudWatch logs + alarms, SNS notifications
+- State: S3 remote state + DynamoDB lock table, isolated per env/module
 
-- Modular Terraform design for AWS
-- ECS Fargate platform with ALB, WAF, Cognito, Secrets Manager, SNS
-- Per-module, per-environment remote state stored in S3 with DynamoDB locking
-- Cross-module state references via `terraform_remote_state`
-- Multi-environment layout (`dev` / `stg`) with isolated state and environment-specific values
-- CI/CD validation with `terraform fmt`, `terraform validate`, `tflint`, and `checkov`
+## High-Level Architecture
 
-## Architecture
-
-```
+```text
 Internet
-   │
-  WAF (AWS WAFv2)
-   │
-  ALB (Application Load Balancer)
-   │
-  ECS Fargate (private subnets)
-   ├── ECR           — container image registry
-   ├── Secrets Manager — DB passwords, API keys
-   ├── Cognito       — user authentication (OAuth2 / OIDC)
-   └── SNS           — email alerts + CloudWatch alarms
+  -> ALB (public subnets)
+  -> WAFv2 (managed rules + rate limiting)
+  -> ECS Fargate services (private-app subnets)
+  -> RDS PostgreSQL (private-data subnets, Multi-AZ)
+  -> ElastiCache Redis (private-data subnets, Multi-AZ)
 ```
 
 ## Repository Layout
 
-```
-bootstrap/              — S3 bucket + DynamoDB table for remote state (run once)
+```text
+bootstrap/                      # state bucket + lock table
 modules/
-  vpc/                  — VPC, subnets, IGW, NAT Gateway, route tables
-  ecr/                  — ECR repository with lifecycle policy
-  alb/                  — ALB, target group, listeners, security group
-  waf/                  — WAFv2 WebACL with managed rule sets and rate limiting
-  iam/                  — ECS execution role, task role, least-privilege policies
-  secrets/              — Secrets Manager secret with initial placeholder values
-  sns/                  — SNS topic with email subscriptions
-  cognito/              — Cognito User Pool, App Client, hosted UI domain
-  ecs/                  — ECS cluster, Fargate service, task definition, autoscaling, CloudWatch alarms
+  vpc/                          # VPC, subnet tiers, NAT, route tables
+  alb/                          # ALB, listeners, target group, SG
+  waf/                          # WAF web ACL + managed rules + optional allowlist
+  ecs/                          # ECS cluster/service/task, autoscaling, alarms
+  rds/                          # Multi-AZ RDS + subnet group + SG
+  redis/                        # Redis replication group + subnet group + SG
+  iam/                          # ECS execution/task roles
+  secrets/                      # Secrets Manager secret
+  ecr/                          # ECR repo + lifecycle policy
+  sns/                          # SNS alert topic
+  cognito/                      # auth layer
 envs/
-  dev/                  — development environment (one directory per module)
-  stg/                  — staging environment (one directory per module)
-.github/workflows/
-  terraform.yml         — CI pipeline: fmt, validate, tflint, checkov
+  dev/
+    vpc/ alb/ waf/ ecr/ iam/ secrets/ sns/ cognito/ ecs/ rds/ redis/
+  stg/
+    vpc/ alb/ waf/ ecr/ iam/ secrets/ sns/ cognito/ ecs/ rds/ redis/
 ```
 
-## Remote State Layout
+## Important Engineering Decisions
 
-Each module in each environment has its own isolated state file:
+- `stg` state is isolated from `dev` (backend keys + `terraform_remote_state` references).
+- VPC supports `nat_gateway_per_az` for higher availability in higher environments.
+- Data tier is isolated in dedicated `private_data` subnets.
+- ALB hardened with strict desync mitigation and invalid header drop.
+- WAF includes:
+  - AWS managed common rules
+  - AWS IP reputation rules
+  - known-bad-input rules
+  - rate limiting
+  - optional allowlist CIDRs
+- ECS autoscaling uses both CPU and memory target tracking.
 
-```
-s3://tfstate-aws-ecs-platform/
-  dev/vpc/terraform.tfstate
-  dev/ecr/terraform.tfstate
-  dev/alb/terraform.tfstate
-  dev/waf/terraform.tfstate
-  dev/iam/terraform.tfstate
-  dev/secrets/terraform.tfstate
-  dev/sns/terraform.tfstate
-  dev/cognito/terraform.tfstate
-  dev/ecs/terraform.tfstate
-  stg/vpc/terraform.tfstate
-  stg/...
-```
+## Deployment Order (Per Environment)
 
-Modules that depend on each other read outputs via `terraform_remote_state`. For example, `envs/dev/ecs` reads VPC subnet IDs, ALB target group ARN, ECR URL, IAM role ARNs, and SNS topic ARN from the respective state files.
+Apply in this order:
 
-## Modules
+1. `vpc`
+2. `ecr`
+3. `secrets`
+4. `sns`
+5. `alb`
+6. `waf`
+7. `iam`
+8. `ecs`
+9. `rds`
+10. `redis`
+11. `cognito` (if needed by your app path)
 
-### `vpc`
-VPC with public and private subnets across two availability zones, Internet Gateway, NAT Gateway, and route tables.
-
-### `ecr`
-Private ECR repository with image scanning on push and a lifecycle policy to retain the last N images.
-
-### `alb`
-Application Load Balancer in public subnets with a target group (IP mode for Fargate), HTTP listener, optional HTTPS listener with redirect, and a dedicated security group.
-
-### `waf`
-WAFv2 WebACL attached to the ALB with AWS managed rule sets (Common Rules, Known Bad Inputs) and a configurable IP-based rate limit rule.
-
-### `iam`
-ECS task execution role with least-privilege access to ECR and Secrets Manager. ECS task role with permissions to publish to SNS and read secrets at runtime.
-
-### `secrets`
-Secrets Manager secret for application credentials. Initial values are written once; subsequent rotations are ignored by Terraform (`lifecycle.ignore_changes`).
-
-### `sns`
-SNS topic with email subscriptions used for CloudWatch alarm notifications.
-
-### `cognito`
-Cognito User Pool with email-based sign-in, password policy, and a hosted UI domain. App Client configured for the Authorization Code flow with PKCE.
-
-### `ecs`
-ECS cluster with Container Insights enabled, Fargate task definition, ECS service with deployment circuit breaker and rollback, Application Autoscaling on CPU utilisation, and CloudWatch alarms for CPU and memory high.
-
-## CI/CD
-
-GitHub Actions validates all environments on every push and pull request.
-
-| Step | Tool | Purpose |
-|---|---|---|
-| Format check | `terraform fmt -check` | Consistent HCL formatting |
-| Init | `terraform init -backend=false` | Provider resolution without remote state |
-| Validate | `terraform validate` | Syntax and internal consistency |
-| Lint | `tflint` | Provider-specific errors, deprecated arguments, wrong types |
-| Security scan | `checkov` | Misconfigurations — encryption, public access, IAM over-permissioning |
-
-The pipeline does not require AWS credentials.
-
-## How To Use
-
-### 1. Bootstrap remote state (run once)
-
-```bash
-cd bootstrap
-terraform init
-terraform apply
-```
-
-### 2. Deploy a module
-
-Apply modules in dependency order — `vpc` first, then the rest:
+## Example Workflow
 
 ```bash
 cd envs/dev/vpc
 terraform init
 terraform apply
 
-cd ../ecr
+cd ../alb
 terraform init
 terraform apply
-
-# continue for: secrets, sns, alb, waf, cognito, iam, ecs
 ```
 
-### 3. Update `terraform.tfvars`
+Repeat by module order.
 
-Each environment directory contains a `terraform.tfvars` with sensible defaults. Replace placeholder values (email addresses, callback URLs, certificate ARNs) before applying.
+## Security Posture
 
-## Environment Differences
+- IAM role-based access for workloads (no static credentials in app runtime)
+- App-to-data access constrained via security groups
+- RDS not publicly accessible
+- Encryption enabled for RDS and Redis
+- Secrets stored in Secrets Manager
 
-| Setting | dev | stg |
-|---|---|---|
-| VPC CIDR | `10.0.0.0/16` | `10.1.0.0/16` |
-| Task CPU | 256 | 512 |
-| Task memory | 512 MiB | 1024 MiB |
-| Desired count | 1 | 2 |
-| WAF rate limit | 2000 req/5min | 3000 req/5min |
-| Log retention | 30 days | 60 days |
+## Portfolio Notes
 
-## Notes
-
-- This is a reference implementation, not a production-ready landing zone.
-- Add remote state for the bootstrap itself, private DNS, ACM certificates, and a deployment pipeline for container images as next steps.
-- The `checkov` step runs with `soft_fail: true` to allow reviewing findings without blocking the pipeline during the portfolio phase.
+This repo intentionally prioritizes clarity and modularity over enterprise complexity (for example, no GitOps controller, no service mesh, no multi-account landing zone), while still demonstrating production-relevant patterns.

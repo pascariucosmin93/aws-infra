@@ -25,11 +25,21 @@ variable "private_subnet_cidrs" {
   type = list(string)
 }
 
+variable "private_data_subnet_cidrs" {
+  type    = list(string)
+  default = []
+}
+
 variable "availability_zones" {
   type = list(string)
 }
 
 variable "enable_nat_gateway" {
+  type    = bool
+  default = true
+}
+
+variable "nat_gateway_per_az" {
   type    = bool
   default = true
 }

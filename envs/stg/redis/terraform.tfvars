@@ -1,0 +1,9 @@
+aws_region                 = "eu-west-1"
+project                    = "ecs-platform"
+environment                = "stg"
+node_type                  = "cache.t4g.medium"
+engine_version             = "7.1"
+num_cache_clusters         = 2
+at_rest_encryption_enabled = true
+transit_encryption_enabled = true
+snapshot_retention_limit   = 7

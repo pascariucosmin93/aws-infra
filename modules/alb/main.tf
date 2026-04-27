@@ -34,13 +34,24 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_lb" "this" {
-  name               = "${var.project}-${var.environment}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = var.public_subnet_ids
+  name                       = "${var.project}-${var.environment}-alb"
+  internal                   = false
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.alb.id]
+  subnets                    = var.public_subnet_ids
+  drop_invalid_header_fields = true
+  desync_mitigation_mode     = "strictest"
 
   enable_deletion_protection = var.environment == "prod" ? true : false
+
+  dynamic "access_logs" {
+    for_each = var.enable_access_logs && var.access_logs_bucket != "" ? [1] : []
+    content {
+      bucket  = var.access_logs_bucket
+      prefix  = var.access_logs_prefix
+      enabled = true
+    }
+  }
 
   tags = {
     Name        = "${var.project}-${var.environment}-alb"

@@ -18,3 +18,9 @@ variable "rate_limit" {
   type        = number
   default     = 2000
 }
+
+variable "allowed_ip_cidrs" {
+  description = "Optional allowlist CIDRs"
+  type        = list(string)
+  default     = []
+}

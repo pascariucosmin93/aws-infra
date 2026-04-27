@@ -35,3 +35,21 @@ variable "certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "enable_access_logs" {
+  description = "Enable ALB access logs"
+  type        = bool
+  default     = false
+}
+
+variable "access_logs_bucket" {
+  description = "S3 bucket name for ALB access logs"
+  type        = string
+  default     = ""
+}
+
+variable "access_logs_prefix" {
+  description = "S3 prefix for ALB access logs"
+  type        = string
+  default     = "alb"
+}

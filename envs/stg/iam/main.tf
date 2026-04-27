@@ -6,7 +6,7 @@ data "terraform_remote_state" "secrets" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/secrets/terraform.tfstate"
+    key    = "stg/secrets/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -15,7 +15,7 @@ data "terraform_remote_state" "ecr" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/ecr/terraform.tfstate"
+    key    = "stg/ecr/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -24,7 +24,7 @@ data "terraform_remote_state" "sns" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/sns/terraform.tfstate"
+    key    = "stg/sns/terraform.tfstate"
     region = var.aws_region
   }
 }

@@ -67,8 +67,8 @@ resource "aws_iam_role" "task" {
 
 data "aws_iam_policy_document" "task" {
   statement {
-    effect  = "Allow"
-    actions = ["sns:Publish"]
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
     resources = var.sns_topic_arns
   }
 

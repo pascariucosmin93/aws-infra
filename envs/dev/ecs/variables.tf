@@ -53,6 +53,16 @@ variable "max_capacity" {
   default = 2
 }
 
+variable "cpu_target_utilization" {
+  type    = number
+  default = 70
+}
+
+variable "memory_target_utilization" {
+  type    = number
+  default = 75
+}
+
 variable "log_retention_days" {
   type    = number
   default = 30

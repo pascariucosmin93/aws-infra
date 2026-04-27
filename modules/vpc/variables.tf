@@ -19,8 +19,14 @@ variable "public_subnet_cidrs" {
 }
 
 variable "private_subnet_cidrs" {
-  description = "CIDR blocks for private subnets"
+  description = "CIDR blocks for private app subnets"
   type        = list(string)
+}
+
+variable "private_data_subnet_cidrs" {
+  description = "CIDR blocks for private data subnets (RDS/Redis)"
+  type        = list(string)
+  default     = []
 }
 
 variable "availability_zones" {
@@ -29,7 +35,13 @@ variable "availability_zones" {
 }
 
 variable "enable_nat_gateway" {
-  description = "Whether to create a NAT Gateway for private subnets"
+  description = "Whether to create NAT Gateway(s) for private subnets"
   type        = bool
   default     = true
+}
+
+variable "nat_gateway_per_az" {
+  description = "Create one NAT gateway per AZ when true, otherwise single NAT in first public subnet"
+  type        = bool
+  default     = false
 }

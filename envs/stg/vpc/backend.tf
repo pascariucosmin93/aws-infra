@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/vpc/terraform.tfstate"
+    key    = "stg/vpc/terraform.tfstate"
     region = "eu-west-1"
 
     dynamodb_table = "tfstate-aws-ecs-platform-locks"

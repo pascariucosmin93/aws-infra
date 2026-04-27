@@ -27,3 +27,18 @@ variable "certificate_arn" {
   type    = string
   default = ""
 }
+
+variable "enable_access_logs" {
+  type    = bool
+  default = false
+}
+
+variable "access_logs_bucket" {
+  type    = string
+  default = ""
+}
+
+variable "access_logs_prefix" {
+  type    = string
+  default = "alb"
+}

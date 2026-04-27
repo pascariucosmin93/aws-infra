@@ -6,7 +6,7 @@ data "terraform_remote_state" "vpc" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/vpc/terraform.tfstate"
+    key    = "stg/vpc/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -15,7 +15,7 @@ data "terraform_remote_state" "alb" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/alb/terraform.tfstate"
+    key    = "stg/alb/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -24,7 +24,7 @@ data "terraform_remote_state" "ecr" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/ecr/terraform.tfstate"
+    key    = "stg/ecr/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -33,7 +33,7 @@ data "terraform_remote_state" "iam" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/iam/terraform.tfstate"
+    key    = "stg/iam/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -42,7 +42,7 @@ data "terraform_remote_state" "secrets" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/secrets/terraform.tfstate"
+    key    = "stg/secrets/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -51,7 +51,7 @@ data "terraform_remote_state" "sns" {
   backend = "s3"
   config = {
     bucket = "tfstate-aws-ecs-platform"
-    key    = "dev/sns/terraform.tfstate"
+    key    = "stg/sns/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -73,19 +73,21 @@ module "ecs" {
   task_role_arn         = data.terraform_remote_state.iam.outputs.task_role_arn
   sns_topic_arns        = [data.terraform_remote_state.sns.outputs.topic_arn]
 
-  secrets_from_ssm = {
+  secrets_from_arns = {
     DB_PASSWORD = data.terraform_remote_state.secrets.outputs.secret_arn
   }
 
-  container_port     = var.container_port
-  health_check_path  = var.health_check_path
-  cpu                = var.cpu
-  memory             = var.memory
-  desired_count      = var.desired_count
-  min_capacity       = var.min_capacity
-  max_capacity       = var.max_capacity
-  log_retention_days = var.log_retention_days
-  image_tag          = var.image_tag
+  container_port            = var.container_port
+  health_check_path         = var.health_check_path
+  cpu                       = var.cpu
+  memory                    = var.memory
+  desired_count             = var.desired_count
+  min_capacity              = var.min_capacity
+  max_capacity              = var.max_capacity
+  cpu_target_utilization    = var.cpu_target_utilization
+  memory_target_utilization = var.memory_target_utilization
+  log_retention_days        = var.log_retention_days
+  image_tag                 = var.image_tag
 
   environment_variables = {
     ENVIRONMENT = var.environment

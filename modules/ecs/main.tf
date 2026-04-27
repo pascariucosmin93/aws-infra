@@ -9,6 +9,10 @@ resource "aws_cloudwatch_log_group" "this" {
   }
 }
 
+locals {
+  resolved_secrets = length(var.secrets_from_arns) > 0 ? var.secrets_from_arns : var.secrets_from_ssm
+}
+
 resource "aws_ecs_cluster" "this" {
   name = "${var.project}-${var.environment}"
 
@@ -81,7 +85,7 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       secrets = [
-        for k, v in var.secrets_from_ssm : {
+        for k, v in local.resolved_secrets : {
           name      = k
           valueFrom = v
         }
@@ -170,7 +174,24 @@ resource "aws_appautoscaling_policy" "cpu" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = 70
+    target_value       = var.cpu_target_utilization
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_policy" "memory" {
+  name               = "${var.project}-${var.environment}-${var.name}-memory-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.this.resource_id
+  scalable_dimension = aws_appautoscaling_target.this.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.this.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = var.memory_target_utilization
     scale_in_cooldown  = 300
     scale_out_cooldown = 60
   }

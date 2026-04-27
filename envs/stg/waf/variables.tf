@@ -17,3 +17,8 @@ variable "rate_limit" {
   type    = number
   default = 2000
 }
+
+variable "allowed_ip_cidrs" {
+  type    = list(string)
+  default = []
+}

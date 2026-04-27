@@ -1,4 +1,5 @@
-aws_region  = "eu-west-1"
-project     = "ecs-platform"
-environment = "stg"
-rate_limit  = 3000
+aws_region       = "eu-west-1"
+project          = "ecs-platform"
+environment      = "stg"
+rate_limit       = 3000
+allowed_ip_cidrs = []

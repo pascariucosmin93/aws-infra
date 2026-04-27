@@ -101,6 +101,18 @@ variable "max_capacity" {
   default     = 4
 }
 
+variable "cpu_target_utilization" {
+  description = "Target ECS service CPU utilization for autoscaling"
+  type        = number
+  default     = 70
+}
+
+variable "memory_target_utilization" {
+  description = "Target ECS service memory utilization for autoscaling"
+  type        = number
+  default     = 75
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number
@@ -114,6 +126,12 @@ variable "environment_variables" {
 }
 
 variable "secrets_from_ssm" {
+  description = "Deprecated: map of env var name to secret ARN"
+  type        = map(string)
+  default     = {}
+}
+
+variable "secrets_from_arns" {
   description = "Map of env var name to Secrets Manager ARN"
   type        = map(string)
   default     = {}

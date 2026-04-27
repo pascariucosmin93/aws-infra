@@ -73,19 +73,21 @@ module "ecs" {
   task_role_arn         = data.terraform_remote_state.iam.outputs.task_role_arn
   sns_topic_arns        = [data.terraform_remote_state.sns.outputs.topic_arn]
 
-  secrets_from_ssm = {
+  secrets_from_arns = {
     DB_PASSWORD = data.terraform_remote_state.secrets.outputs.secret_arn
   }
 
-  container_port     = var.container_port
-  health_check_path  = var.health_check_path
-  cpu                = var.cpu
-  memory             = var.memory
-  desired_count      = var.desired_count
-  min_capacity       = var.min_capacity
-  max_capacity       = var.max_capacity
-  log_retention_days = var.log_retention_days
-  image_tag          = var.image_tag
+  container_port            = var.container_port
+  health_check_path         = var.health_check_path
+  cpu                       = var.cpu
+  memory                    = var.memory
+  desired_count             = var.desired_count
+  min_capacity              = var.min_capacity
+  max_capacity              = var.max_capacity
+  cpu_target_utilization    = var.cpu_target_utilization
+  memory_target_utilization = var.memory_target_utilization
+  log_retention_days        = var.log_retention_days
+  image_tag                 = var.image_tag
 
   environment_variables = {
     ENVIRONMENT = var.environment
