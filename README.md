@@ -1,5 +1,7 @@
 # aws-ecs-platform
 
+[![Terraform CI](https://github.com/pascariucosmin93/aws-infra/actions/workflows/terraform.yml/badge.svg)](https://github.com/pascariucosmin93/aws-infra/actions/workflows/terraform.yml)
+
 AWS-native Terraform platform for running a web application on ECS Fargate with secure edge, multi-AZ networking, managed data services, and per-environment state isolation.
 
 This repository is portfolio-focused, but structured to reflect production engineering standards.
